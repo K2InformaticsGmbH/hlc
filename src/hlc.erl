@@ -191,7 +191,7 @@ handle_call(now, _From, #clock{physical_clock=PhysicalCLock, ts=TS}=Clock) ->
 
     {reply, NewTS, Clock#clock{ts=NewTS}};
 
-handle_call({update, N, RT}, _From, #clock{physical_clock=PhysicalCLock,
+handle_call({update, RT}, _From, #clock{physical_clock=PhysicalCLock,
                                         ts=TS, maxdrift=MaxDrift}=Clock)  ->
     Now = PhysicalCLock(),
 
@@ -216,24 +216,20 @@ handle_call({update, N, RT}, _From, #clock{physical_clock=PhysicalCLock,
                     error_logger:error_msg("Remote wall time drifts from
                                 localphysical clock: %p (%p ahead)",
                                 [RTWalltime, Drift]),
-io:format(user, "[1] ~p -> D ~p, L ~p~n", [N, Drift, TS#timestamp.logical]),
                     {reply, {error, {time_ahead, TS}}, Clock};
                 true ->
                     NewTS = TS#timestamp{wall_time=RTWalltime,
                                          logical = RTLogical +1},
-io:format(user, "[2] ~p -> D ~p, L ~p~n", [N, Drift, NewTS#timestamp.logical]),
                     {reply, NewTS, Clock#clock{ts=NewTS}}
             end;
         false when TSWalltime > RTWalltime ->
             NewTS = TS#timestamp{logical=TSLogical +1},
-io:format(user, "[3] ~p -> D ~p, L ~p~n", [N, Drift, NewTS#timestamp.logical]),
             {reply, NewTS, Clock#clock{ts=NewTS}};
         false ->
             TSLogical1 = if RTLogical > TSLogical -> RTLogical;
                 true -> TSLogical
             end,
             NewTS = TS#timestamp{logical=TSLogical1 +1},
-io:format(user, "[4] ~p -> D ~p, L ~p~n", [N, Drift, NewTS#timestamp.logical]),
             {reply, NewTS, Clock#clock{ts=NewTS}}
     end.
 
